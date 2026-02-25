@@ -1,20 +1,13 @@
-package mgks.os.swv;
+package com.jutech.bantumusic;
 
 /*
-  Smart WebView v8
-  https://github.com/mgks/Android-SmartWebView
-
-  A modern, open-source WebView wrapper for building advanced hybrid Android apps.
-  Native features, modular plugins, and full customisation—built for developers.
-
-  - Documentation: https://mgks.github.io/Android-SmartWebView/documentation  
-  - Plugins: https://mgks.github.io/Android-SmartWebView/documentation/plugins  
-  - Discussions: https://github.com/mgks/Android-SmartWebView/discussions  
-  - Sponsor the Project: https://github.com/sponsors/mgks  
-
+  Bantu Music v3 - JuTech Development
+  PayChangu Payment WebView App
+  
+  A modern, open-source WebView wrapper for Bantu Music app.
+  Built by JuTech Development for PayChangu payment integration.
+  
   MIT License — https://opensource.org/licenses/MIT  
-
-  Mentioning Smart WebView in your project helps others find it and keeps the dev loop alive.
 */
 
 import android.Manifest;
@@ -90,16 +83,10 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.navigation.NavigationView;
 
-import com.journeyapps.barcodescanner.ScanContract;
-import com.journeyapps.barcodescanner.ScanIntentResult;
-import com.journeyapps.barcodescanner.ScanOptions;
-
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.regex.Matcher;
-
-import mgks.os.swv.plugins.QRScannerPlugin;
 
 /**
  * Main Activity for Smart WebView
@@ -116,7 +103,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private LinearLayout adContainer;
     private PermissionManager permissionManager;
     private ActivityResultLauncher<Intent> fileUploadLauncher;
-    private ActivityResultLauncher<ScanOptions> qrScannerLauncher;
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
@@ -224,16 +210,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             }
         );
 
-        qrScannerLauncher = registerForActivityResult(new ScanContract(),
-                result -> {
-                    // The result is already a ScanIntentResult, no parsing needed
-                    PluginInterface plugin = SWVContext.getPluginManager().getPluginInstance("QRScannerPlugin");
-                    if (plugin instanceof QRScannerPlugin) {
-                        ((QRScannerPlugin) plugin).handleScanResult(result);
-                    }
-                }
-        );
-
         SWVContext.setAppContext(getApplicationContext());
         fileProcessing = new FileProcessing(this, fileUploadLauncher);
 
@@ -245,11 +221,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         SWVContext.loadPlugins(this);
         SWVContext.init(this, SWVContext.asw_view, fns); // This initializes the PluginManager and all queued plugins
-
-        PluginInterface qrPlugin = SWVContext.getPluginManager().getPluginInstance("QRScannerPlugin");
-        if (qrPlugin instanceof QRScannerPlugin) {
-            ((QRScannerPlugin) qrPlugin).setLauncher(qrScannerLauncher);
-        }
 
         // Setup features and handle intents now that plugins are ready
         if (savedInstanceState == null) {
@@ -464,64 +435,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
                 if(SWVContext.SWV_DEBUGMODE) {
                     Log.d("SWV_JS", consoleMessage.message() + " -- From line " +
-                            consoleMessage.lineNumber() + " of " + consoleMessage.sourceId());
-                }
-                return true;
-            }
-
-            @Override
-            public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback,
-                                             FileChooserParams fileChooserParams) {
-                return fileProcessing.onShowFileChooser(webView, filePathCallback, fileChooserParams);
-            }
-
-            @Override
-            public void onProgressChanged(WebView view, int p) {
-                if (SWVContext.ASWP_PBAR) {
-                    if (SWVContext.asw_progress == null) SWVContext.asw_progress = findViewById(R.id.msw_progress);
-                    SWVContext.asw_progress.setProgress(p);
-                    if (p == 100) {
-                        SWVContext.asw_progress.setProgress(0);
-                    }
-                }
-            }
-
-            @Override
-            public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
-                if (permissionManager.isLocationPermissionGranted()) {
-                    callback.invoke(origin, true, false);
-                } else {
-                    // If permission is not granted, we should request it.
-                    // We can re-use the initial request logic.
-                    permissionManager.requestInitialPermissions();
-                }
-            }
-        };
-    }
-
-    /**
-     * Setup various features based on configuration
-     */
-    private void setupFeatures() {
-        // Setup service worker if supported
-        ServiceWorkerController.getInstance().setServiceWorkerClient(new ServiceWorkerClient() {
-            @Override
-            public WebResourceResponse shouldInterceptRequest(WebResourceRequest request) {
-                return null;
-            }
-        });
-
-        // Prevent app from being started again when it is still alive in the background
-        if (!isTaskRoot()) {
-            finish();
-            return;
-        }
-
-        // Initialize notification channel on Android 8+
-        setupNotificationChannel();
-
-        // Setup swipe refresh functionality
-        setupSwipeRefresh();
 
         // Setup progress bar if enabled
         if (SWVContext.ASWP_PBAR) {
